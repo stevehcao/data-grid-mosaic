@@ -133,7 +133,6 @@ const DataGrid = () => {
   useEffect(() => {
     let sortedOnCol = sortedOn[0];
     let colDirection = sortedOn[1];
-    console.log(sortedOn);
     if (colDirection === ORIG) {
       setData(unsortedData);
     } else {
