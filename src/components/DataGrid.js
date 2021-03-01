@@ -14,8 +14,7 @@ const ORIG = 0;
 const Cell = ({ datum }) => {
   // parse datum for flag of <state> name as alt
   if (isString(datum) && datum.toLowerCase().endsWith('.png')) {
-    
-    // helper function to get a parse 
+    // helper function to get a parse
     const parseAlt = (str) => {
       const arr = str.split('/');
       for (let el of arr) {
@@ -69,11 +68,53 @@ const DataGrid = () => {
   const [unsortedData, setUnsortedData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  /* TODO: Load the data from the URL */
-  // useEffect to load data
-  // use native fetch api
+  // need to process the columns to get ["state", "abbreviation", "population", "size", "flag"] for column headers
+  const columns = uniq(
+    flatten(
+      data.map((row) => Object.keys(row).filter((key) => !key.startsWith('_')))
+    )
+  );
+
+  // State
+  const [sortedOn, setSortedOn] = useState([null, AZ]);
+  const [pinnedColumns, setPinnedColumns] = useState([]);
+
+  const [orderedColumns, setOrderedColumns] = useState(columns);
+
+  const onClick = useCallback(
+    (col) => (event) => {
+      if (event.metaKey) {
+        if (pinnedColumns.includes(col)) {
+          let removePinned = pinnedColumns.filter((column) => {
+            return column !== col;
+          });
+          setPinnedColumns(removePinned);
+        } else {
+          setPinnedColumns([...pinnedColumns, col]);
+        }
+      } else {
+        let sortedOnCol = sortedOn[0];
+        let colDirection = sortedOn[1];
+
+        // conditionals to determine which click it should sort by
+        // there is a useEffect that tracks changes on sortedOn
+        if (
+          (sortedOnCol === null && colDirection === AZ) ||
+          (sortedOnCol === col && colDirection === ORIG)
+        ) {
+          setSortedOn([col, AZ]);
+          // means that this is the second time it's been clicked and need to be descending
+        } else if (sortedOnCol === col && colDirection === AZ) {
+          setSortedOn([col, ZA]);
+        } else {
+          setSortedOn([col, ORIG]);
+        }
+      }
+    },
+    [sortedOn, pinnedColumns, data]
+  );
+
   useEffect(() => {
-    // My TODO: add loading status for data later
     async function fetchStates() {
       const baseURL = 'https://assets.codepen.io/5781725/states-data.json';
       try {
@@ -89,93 +130,6 @@ const DataGrid = () => {
     fetchStates();
   }, []);
 
-  // Preprocess the data to get a list of columns and add a helper index *** IMPORTANT
-  // where is the helper idx?
-  // what is uniq and flatten doing?
-  // uniq create an array of unique values in order, from all given arrays
-  // flatten used to flatten the array to one level deep (there are built in JS for this now)
-  // what is object keys and filtering for?
-  // need to process the columns to get ["state", "abbreviation", "population", "size", "flag"]
-  const columns = uniq(
-    flatten(
-      // object.keys will get you an array of all the keys in that object
-      // in this case it would get you ["state", "abbreviation", "population", "size", "flag"]
-      data.map((row) => Object.keys(row).filter((key) => !key.startsWith('_')))
-    )
-  );
-  // console.log(columns);
-  // console.log("UNPROCESSED", data.map((row) => Object.keys(row).filter((key) => !key.startsWith('_'))))
-
-  // State
-  // this sortedOn piece of state is what is determining ascending or descending order
-  const [sortedOn, setSortedOn] = useState([null, AZ]);
-  const [pinnedColumns, setPinnedColumns] = useState([]);
-
-  const [orderedColumns, setOrderedColumns] = useState(columns);
-  // Event handlers
-  // usecallback is so that it memoizes between the renders the same function isn't recreated
-  const onClick = useCallback(
-    (col) => (event) => {
-      if (event.metaKey) {
-        // pinning
-        /* TODO: implement the onclick handler for pinning */
-        // setPinnedColumns in order to maintain order in which it was pinned
-        // have to parse just the column data
-        // setPinnedColumns([]);
-        // possible on click add CSS class in order to change css to pin to the left
-        // let pinTEST = columns.filter((column, i) => {
-        //   return column === col;
-        // });
-        // unpinned feature
-        if (pinnedColumns.includes(col)) {
-          let removePinned = pinnedColumns.filter((column) => {
-            return column !== col;
-          });
-          setPinnedColumns(removePinned);
-        } else {
-          setPinnedColumns([...pinnedColumns, col]);
-        }
-
-        // possible to grab all data of pinnedColumn and then rebuilding the data?
-      } else {
-        // sorting
-        /* TODO: implement the onclick handler for sorting */
-        // first click enables sorting in ascending order (A-Z)
-        // second click descending order (Z-A)
-        // third click or clicking any other column disables sorting and returns data grid to initial sorted order
-        // sort and update data by setting state
-        // console.log(data)
-        // need the ability to sort ascending and descending as well as sorting numbers vs alphabet
-        // how to check data in column?
-        // sorted on how to change ascending and descending?
-        let sortedOnCol = sortedOn[0];
-        let colDirection = sortedOn[1];
-
-        // conditionals to determine which click it should sort by
-        if (
-          (sortedOnCol === null && colDirection === AZ) ||
-          (sortedOnCol === col && colDirection === ORIG)
-        ) {
-          console.log('first click on column');
-
-          setSortedOn([col, AZ]);
-          // means that this is the second time it's been clicked and need to be descending
-        } else if (sortedOnCol === col && colDirection === AZ) {
-          console.log('second click on column');
-          setSortedOn([col, ZA]);
-        } else {
-          console.log('third click or click on a different column on column');
-          // need to reset sort?
-          setSortedOn([col, ORIG]);
-        }
-      }
-    },
-    [sortedOn, pinnedColumns, data]
-  );
-
-  /* TODO: Re-order columns and sort data (if necessary) */
-  // useEffect when sortOn is changed?
-  // MY TODO: rename sortendOn indexes to more human readable
   useEffect(() => {
     let sortedOnCol = sortedOn[0];
     let colDirection = sortedOn[1];
@@ -197,9 +151,7 @@ const DataGrid = () => {
     }
   }, [sortedOn]);
 
-  // when pinnedColumns are changed
   useEffect(() => {
-    // do something with the list of pinned cols
     let reorderedColumns = [
       ...pinnedColumns,
       ...columns.filter((col) => !pinnedColumns.includes(col)),
@@ -207,7 +159,6 @@ const DataGrid = () => {
     setOrderedColumns(reorderedColumns);
   }, [pinnedColumns]);
 
-  // another useEffect when you are setting pinned data
   useEffect(() => {
     if (pinnedColumns.length === 0) {
       setOrderedColumns(columns);
