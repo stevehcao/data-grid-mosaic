@@ -1,15 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 
-// const { flatten, uniq, capitalize, isString, sortBy, reverse, isNumber } = _; // lodash
-import {
-  flatten,
-  uniq,
-  capitalize,
-  isString,
-  sortBy,
-  reverse,
-  isNumber,
-} from 'lodash';
+import { flatten, uniq, capitalize, isString, isNumber } from 'lodash';
 
 // Constants
 const AZ = 1;
@@ -20,12 +11,26 @@ const ORIG = 0;
 // DATA GRID COMPONENTS
 ///////////////////////////////////////////////////////////////////////////////
 // A single cell in a data grid
-// TODO: for img tag consider an alt tag
 const Cell = ({ datum }) => {
+  // parse datum for flag of <state> name as alt
+  if (isString(datum) && datum.toLowerCase().endsWith('.png')) {
+    
+    // helper function to get a parse 
+    const parseAlt = (str) => {
+      const arr = str.split('/');
+      for (let el of arr) {
+        if (el.includes('Flag')) {
+          return el.split('.')[0];
+        }
+      }
+    };
+    var flagAlt = parseAlt(datum);
+  }
+
   return (
     <td>
       {isString(datum) && datum.toLowerCase().endsWith('.png') ? (
-        <img src={datum} />
+        <img src={datum} alt={flagAlt} />
       ) : isNumber(datum) ? (
         datum.toLocaleString()
       ) : (
@@ -106,7 +111,6 @@ const DataGrid = () => {
   const [sortedOn, setSortedOn] = useState([null, AZ]);
   const [pinnedColumns, setPinnedColumns] = useState([]);
 
-  // my states
   const [orderedColumns, setOrderedColumns] = useState(columns);
   // Event handlers
   // usecallback is so that it memoizes between the renders the same function isn't recreated
@@ -180,7 +184,6 @@ const DataGrid = () => {
       setData(unsortedData);
     } else {
       const sortedData = [...data].sort((a, b) => {
-        // console.log(sortedOn)
         if (a[sortedOnCol] < b[sortedOnCol]) {
           // check for ascending or descending
           return colDirection === AZ ? -1 : 1;
